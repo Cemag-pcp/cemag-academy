@@ -77,7 +77,8 @@ services:
       - key: AWS_STORAGE_BUCKET_NAME
         sync: false
 
-      # Documentação ISO: quem sincroniza é o cron abaixo, não a tela
+      # Documentação ISO: a tela não dispara sincronização; quem sincroniza é a
+      # rotina agendada na máquina local (manage.py sincronizar_iso).
       - key: ISO_SYNC_AUTOMATICA
         value: "False"
 
@@ -104,40 +105,3 @@ services:
       # Ex.: https://cemag-academy-api.onrender.com/api/v1
       - key: NEXT_PUBLIC_API_URL
         sync: false
-
-  # ── Sincronização da Documentação ISO (Lista Mestra + Matriz) ───────
-  - type: cron
-    name: cemag-academy-sync-iso
-    runtime: python
-    region: virginia
-    plan: starter
-    rootDir: backend
-    schedule: "*/10 * * * *"   # a cada 10 min (horário UTC)
-    buildCommand: pip install -r requirements.prod.txt
-    startCommand: python manage.py sincronizar_iso
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.13.14
-      - key: DJANGO_SETTINGS_MODULE
-        value: cemag_academy.settings.prod
-      # Mesmas credenciais da API (digitadas uma vez só, lá)
-      - { key: SECRET_KEY,             fromService: { type: web, name: cemag-academy-api, envVarKey: SECRET_KEY } }
-      - { key: DB_ENGINE,              fromService: { type: web, name: cemag-academy-api, envVarKey: DB_ENGINE } }
-      - { key: DB_SCHEMA,              fromService: { type: web, name: cemag-academy-api, envVarKey: DB_SCHEMA } }
-      - { key: DB_HOST,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_HOST } }
-      - { key: DB_PORT,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_PORT } }
-      - { key: DB_NAME,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_NAME } }
-      - { key: DB_USER,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_USER } }
-      - { key: DB_PASSWORD,            fromService: { type: web, name: cemag-academy-api, envVarKey: DB_PASSWORD } }
-      - { key: GOOGLE_TYPE,            fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_TYPE } }
-      - { key: GOOGLE_PROJECT_ID,      fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_PROJECT_ID } }
-      - { key: GOOGLE_PRIVATE_KEY_ID,  fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_PRIVATE_KEY_ID } }
-      - { key: GOOGLE_PRIVATE_KEY,     fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_PRIVATE_KEY } }
-      - { key: GOOGLE_CLIENT_EMAIL,    fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_CLIENT_EMAIL } }
-      - { key: GOOGLE_CLIENT_ID,       fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_CLIENT_ID } }
-      - { key: GOOGLE_AUTH_URI,        fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_AUTH_URI } }
-      - { key: GOOGLE_TOKEN_URI,       fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_TOKEN_URI } }
-      - { key: GOOGLE_UNIVERSE_DOMAIN, fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_UNIVERSE_DOMAIN } }
-      - { key: AWS_ACCESS_KEY_ID,      fromService: { type: web, name: cemag-academy-api, envVarKey: AWS_ACCESS_KEY_ID } }
-      - { key: AWS_SECRET_ACCESS_KEY,  fromService: { type: web, name: cemag-academy-api, envVarKey: AWS_SECRET_ACCESS_KEY } }
-      - { key: AWS_STORAGE_BUCKET_NAME, fromService: { type: web, name: cemag-academy-api, envVarKey: AWS_STORAGE_BUCKET_NAME } }
