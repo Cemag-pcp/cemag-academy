@@ -18,7 +18,10 @@ export function mapDoc(raw: any): Documento {
     criadoPorNome:    raw.criado_por_nome ?? '',
     criadoEm:         raw.criado_em ?? '',
     ativo:            raw.ativo ?? true,
+    codigo:           raw.codigo ?? '',
+    versao:           raw.versao ?? '',
     isVisto:          raw.is_visto ?? false,
+    novaVersao:       raw.nova_versao ?? false,
   }
 }
 

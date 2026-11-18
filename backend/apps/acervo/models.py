@@ -38,7 +38,10 @@ class Documento(models.Model):
         default=ORIGEM_MANUAL,
     )
     codigo              = models.CharField(max_length=60, blank=True, db_index=True,
-                                           help_text='Código na Lista Mestra, ex.: IT GP-009-000')
+                                           help_text='Código na Lista Mestra sem a versão, ex.: IT GP-009')
+    versao              = models.CharField(max_length=30, blank=True, default='',
+                                           help_text='Versão vigente na Lista Mestra, ex.: 002. '
+                                                     'Quando muda, quem leu a anterior precisa ler de novo.')
     sincronizado_em     = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -54,9 +57,12 @@ class DocumentoVisto(models.Model):
     documento  = models.ForeignKey(Documento, on_delete=models.CASCADE, related_name='vistos')
     usuario    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='documentos_vistos')
     visto_em   = models.DateTimeField(auto_now_add=True)
+    # Versão do documento que foi lida: uma nova versão exige nova leitura (re-treino);
+    # o registro das versões anteriores fica como histórico.
+    versao     = models.CharField(max_length=30, blank=True, default='')
 
     class Meta:
-        unique_together = [('documento', 'usuario')]
+        unique_together = [('documento', 'usuario', 'versao')]
         verbose_name        = 'Documento Visto'
         verbose_name_plural = 'Documentos Vistos'
 

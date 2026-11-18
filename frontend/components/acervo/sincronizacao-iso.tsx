@@ -16,10 +16,6 @@ const ROTULOS_PENDENCIAS: Record<string, { titulo: string; dica: string }> = {
     titulo: 'Códigos da Matriz que não estão na Lista Mestra',
     dica: 'Cadastre o código na aba INTERNOS da Lista Mestra (com o link do arquivo na coluna IDENTIFICAÇÃO).',
   },
-  codigos_com_outra_versao: {
-    titulo: 'Códigos com versão diferente entre as planilhas',
-    dica: 'Foi usada a versão da Lista Mestra. Atualize a Matriz para a mesma versão.',
-  },
   cargos_nao_cadastrados_no_academy: {
     titulo: 'Cargos da Matriz que não existem no Academy',
     dica: 'Cadastre o cargo em Cadastros › Cargos com o mesmo nome da Matriz (ou ajuste o nome na planilha).',
@@ -71,7 +67,7 @@ export function SincronizacaoISO({ status, isRH, onSincronizado }: Props) {
 
   const pendencias = status?.resumo?.pendencias ?? {}
   const totalPendencias = Object.entries(pendencias)
-    .filter(([k]) => k !== 'abas_ignoradas' && k !== 'codigos_com_outra_versao')
+    .filter(([k]) => k !== 'abas_ignoradas')
     .reduce((acc, [, v]) => acc + (v?.length ?? 0), 0)
 
   async function sincronizarAgora() {

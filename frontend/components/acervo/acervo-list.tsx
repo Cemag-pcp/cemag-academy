@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   FileText, Search,
-  Loader2, FolderOpen, X, CheckCircle2, AlertCircle, BookOpen, Check, Download,
+  Loader2, FolderOpen, X, CheckCircle2, AlertCircle, BookOpen, Check, Download, RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SearchableSelect } from '@/components/ui/searchable-select'
@@ -136,7 +136,10 @@ interface DocCardProps {
 
 function DocCard({ doc, isRH, onRead, onToggleVisto, onFrequencia }: DocCardProps) {
   return (
-    <div className={`flex flex-col gap-3 p-4 rounded-xl border bg-card hover:border-primary/30 transition-colors ${doc.isVisto ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border'}`}>
+    <div className={`flex flex-col gap-3 p-4 rounded-xl border bg-card hover:border-primary/30 transition-colors ${
+      doc.isVisto ? 'border-emerald-500/30 bg-emerald-500/5'
+        : doc.novaVersao ? 'border-amber-500/40 bg-amber-500/5'
+        : 'border-border'}`}>
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-muted">
           <FileText className="w-5 h-5 text-muted-foreground" />
@@ -155,6 +158,17 @@ function DocCard({ doc, isRH, onRead, onToggleVisto, onFrequencia }: DocCardProp
             <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
               <CheckCircle2 className="w-3 h-3" /> Lido
             </span>
+          )}
+          {doc.novaVersao && (
+            <span
+              className="flex items-center gap-1 text-[10px] text-amber-500 font-medium"
+              title="O documento foi atualizado depois da sua leitura. Leia a nova versão."
+            >
+              <RefreshCw className="w-3 h-3" /> Nova versão
+            </span>
+          )}
+          {doc.versao && (
+            <span className="text-[10px] text-muted-foreground">Versão {doc.versao}</span>
           )}
         </div>
       </div>
@@ -303,7 +317,7 @@ export function AcervoList() {
 
   async function handleToggleVisto(doc: Documento) {
     const visto = await marcarVisto(doc.id)
-    setDocumentos(prev => prev.map(d => (d.id === doc.id ? { ...d, isVisto: visto } : d)))
+    setDocumentos(prev => prev.map(d => (d.id === doc.id ? { ...d, isVisto: visto, novaVersao: visto ? false : d.novaVersao } : d)))
     carregarResumo()
   }
 

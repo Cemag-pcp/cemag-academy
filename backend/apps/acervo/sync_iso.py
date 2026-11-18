@@ -11,10 +11,14 @@ colaborador abrir os arquivos sem entrar com o e-mail do Google.
       uma aba por setor, cabeçalho "SETOR | CARGOS | ITs | PQs | DQs | RQs | FLUXOG | NRs | CURSOS".
 
 Regras:
-  • O documento é identificado pelo ID do Drive (assim "lido" e a lista de
-    frequência continuam valendo entre sincronizações).
+  • Os códigos são casados SEM a versão: 'FL AL-001-002' na Matriz = 'FL AL- 001-001'
+    na Lista Mestra = documento 'FL AL-001'. A versão vigente é a da Lista Mestra
+    (se houver mais de uma linha, vale a maior) e fica guardada em Documento.versao.
+  • O documento é identificado pelo código (ou, nos antigos, pelo ID do Drive):
+    uma nova versão em outro arquivo só troca o arquivo do mesmo documento.
+  • Mudou a versão → quem leu a anterior volta a ver o documento como "não lido"
+    (nova versão, precisa ler de novo); a leitura antiga fica como histórico.
   • Liberado para os cargos que o têm na Matriz (cargo casado pelo nome).
-  • Código da Matriz com versão diferente da Lista Mestra → vale a da Lista Mestra.
   • Documento sem nenhum cargo reconhecido NÃO é publicado (senão ficaria
     visível para todos); aparece nas pendências.
   • Documento que saiu das planilhas é desativado (ativo=False), não apagado.
@@ -35,8 +39,9 @@ from .models import Documento, SincronizacaoISO
 
 log = logging.getLogger(__name__)
 
-# "IT GP-009-000", "PQ GP-001-004", "FL AL-001-002"…
-RE_CODIGO = re.compile(r'\b([A-Z]{2,3})\s+([A-Z]{1,4})-(\d{3})-(\d{3})\b')
+# "IT GP-009-000", "FL AL-001-002" e as variações digitadas na planilha:
+# "IT AV 020-002", "FL AL- 001-002", "IT AV-001" (a versão é opcional)
+RE_CODIGO = re.compile(r'\b([A-Z]{2,3})\s+([A-Z]{1,4})\s*-?\s*(\d{3})(?:\s*-\s*(\d{3}))?\b')
 RE_DRIVE_URL = re.compile(r'/d/([A-Za-z0-9_-]{20,})|[?&]id=([A-Za-z0-9_-]{20,})')
 RE_DRIVE_ID = re.compile(r'^[A-Za-z0-9_-]{25,}$')
 
@@ -56,12 +61,13 @@ def _norm(texto: str) -> str:
 
 
 def _codigo(m: re.Match) -> str:
-    return f'{m.group(1)} {m.group(2)}-{m.group(3)}-{m.group(4)}'
+    """Código normalizado e SEM a versão: 'FL AL- 001-002' → 'FL AL-001'."""
+    return f'{m.group(1)} {m.group(2)}-{m.group(3)}'
 
 
-def _base(codigo: str) -> str:
-    """Código sem a versão: 'IT GP-009-000' → 'IT GP-009'."""
-    return codigo.rsplit('-', 1)[0]
+def _versao(m: re.Match) -> str:
+    """'FL AL-001-002' → '002' ('' quando a planilha não traz a versão)."""
+    return m.group(4) or ''
 
 
 def _sheets():
@@ -113,7 +119,12 @@ def ler_lista_mestra(sheets) -> dict:
         if not drive_id:
             continue
 
-        lista[_codigo(m)] = {
+        # Mesmo código em mais de uma linha (versões diferentes): fica a maior
+        cod, versao = _codigo(m), _versao(m)
+        if cod in lista and lista[cod]['versao'] > versao:
+            continue
+        lista[cod] = {
+            'versao': versao,
             'drive_id': drive_id,
             'tipo': (v[1].get('formattedValue') or '').strip() if len(v) > 1 else '',
             'setor': (v[2].get('formattedValue') or '').strip() if len(v) > 2 else '',
@@ -194,26 +205,18 @@ def _sincronizar() -> dict:
     if not matriz:
         raise RuntimeError('Nenhum código lido da Matriz de Conhecimentos.')
 
-    por_base = defaultdict(list)
-    for cod in lista:
-        por_base[_base(cod)].append(cod)
-
     cargos_academy = {_norm(c.nome): c for c in Cargo.objects.all()}
 
     # Agrupa por arquivo do Drive (um mesmo arquivo pode ter mais de um código)
     arquivos = {}
-    nao_encontrados, outra_versao = [], []
+    nao_encontrados = []
     cargos_desconhecidos = set()
     for cod, item in sorted(matriz.items()):
-        cod_lm = cod if cod in lista else None
-        if not cod_lm and por_base.get(_base(cod)):
-            cod_lm = sorted(por_base[_base(cod)])[-1]  # versão vigente da Lista Mestra
-            outra_versao.append({'matriz': cod, 'lista_mestra': cod_lm})
-        if not cod_lm:
+        # Casamento sem a versão; a versão vigente é sempre a da Lista Mestra
+        lm = lista.get(cod)
+        if not lm:
             nao_encontrados.append(cod)
             continue
-
-        lm = lista[cod_lm]
         cargos = set()
         for nome in item['cargos']:
             c = cargos_academy.get(_norm(nome))
@@ -223,20 +226,24 @@ def _sincronizar() -> dict:
                 cargos_desconhecidos.add(nome)
 
         arq = arquivos.setdefault(lm['drive_id'], {
-            'codigo': cod_lm, 'nome': item['nome'], 'lm': lm, 'cargos': set(), 'codigos': set(),
+            'codigo': cod, 'nome': item['nome'], 'lm': lm, 'cargos': set(), 'codigos': {},
         })
         arq['cargos'] |= cargos
-        arq['codigos'].add(cod_lm)
+        arq['codigos'][cod] = lm['versao']
         if not arq['nome'] and item['nome']:
             arq['nome'] = item['nome']
 
     agora = timezone.now()
-    existentes = {}
+    por_codigo, por_drive = {}, {}
     for d in Documento.objects.prefetch_related('cargos').order_by('-ativo', 'criado_em'):
-        existentes.setdefault(d.drive_id, d)  # prefere o ativo / mais antigo
+        # prefere o ativo / mais antigo
+        if d.codigo:
+            por_codigo.setdefault(d.codigo, d)
+        por_drive.setdefault(d.drive_id, d)
+    usados = set()
 
     criados = atualizados = 0
-    sem_cargo, erros_drive = [], []
+    sem_cargo, erros_drive, novas_versoes = [], [], []
     publicados = set()
 
     for drive_id, arq in arquivos.items():
@@ -245,7 +252,9 @@ def _sincronizar() -> dict:
             continue
 
         lm = arq['lm']
-        codigo = ' / '.join(sorted(arq['codigos']))
+        codigos = sorted(arq['codigos'])
+        codigo = ' / '.join(codigos)
+        versao = ' / '.join(arq['codigos'][c] for c in codigos)
         prefixo = arq['codigo'].split(' ', 1)[0]
         titulo = f"{codigo} - {arq['nome']}" if arq['nome'] else (lm['identificacao'] or codigo)
         descricao = ' · '.join(filter(None, [
@@ -254,26 +263,41 @@ def _sincronizar() -> dict:
             f"Revisão: {lm['revisao']}" if lm['revisao'] and lm['revisao'] != '-' else '',
         ]))
 
-        doc = existentes.get(drive_id)
-        if doc is None:
+        # Mesmo documento = mesmo código; os antigos (código com versão) são achados pelo arquivo
+        doc = por_codigo.get(codigo) or por_drive.get(drive_id)
+        if doc is not None and doc.pk in usados:
+            doc = None
+        if doc is None or doc.drive_id != drive_id:
+            # Documento novo, ou nova versão publicada em outro arquivo do Drive
             try:
                 info = get_drive_file_info(drive_id)
             except Exception as exc:  # noqa: BLE001
                 erros_drive.append({'codigo': codigo, 'drive_id': drive_id, 'erro': str(exc)[:200]})
+                if doc is not None:
+                    usados.add(doc.pk)
+                    publicados.add(doc.pk)  # mantém o arquivo anterior no ar
                 continue
-            doc = Documento(
-                drive_id=drive_id,
-                drive_nome=info['drive_nome'],
-                drive_mime_type=info['drive_mime_type'],
-                drive_web_view_link=info['drive_web_view_link'],
-                drive_thumbnail=info['drive_thumbnail'],
-            )
+            if doc is None:
+                doc = Documento()
+            doc.drive_id = drive_id
+            doc.drive_nome = info['drive_nome']
+            doc.drive_mime_type = info['drive_mime_type']
+            doc.drive_web_view_link = info['drive_web_view_link']
+            doc.drive_thumbnail = info['drive_thumbnail']
+            arquivo_trocado = not doc._state.adding
+        else:
+            arquivo_trocado = False
+        usados.add(doc.pk)
+
         novos_valores = {
-            'titulo': titulo[:300], 'descricao': descricao, 'codigo': codigo[:60],
+            'titulo': titulo[:300], 'descricao': descricao, 'codigo': codigo[:60], 'versao': versao[:30],
             'origem': Documento.ORIGEM_PLANILHA, 'ativo': True,
         }
         # Só grava o que mudou (o banco fica longe: cada consulta custa ~130 ms)
-        mudou_campos = doc._state.adding or any(getattr(doc, k) != v for k, v in novos_valores.items())
+        mudou_campos = (doc._state.adding or arquivo_trocado
+                        or any(getattr(doc, k) != v for k, v in novos_valores.items()))
+        if not doc._state.adding and doc.versao != versao[:30]:
+            novas_versoes.append({'codigo': codigo, 'de': doc.versao, 'para': versao})
         mudou_cargos = doc._state.adding or {c.pk for c in doc.cargos.all()} != arq['cargos']
         if mudou_campos or mudou_cargos:
             for k, v in novos_valores.items():
@@ -302,9 +326,10 @@ def _sincronizar() -> dict:
         'desativados': desativados,
         'codigos_na_matriz': len(matriz),
         'codigos_na_lista_mestra': len(lista),
+        # Documentos que mudaram de versão nesta sincronização (quem leu precisa ler de novo)
+        'novas_versoes': novas_versoes,
         'pendencias': {
             'codigos_nao_encontrados_na_lista_mestra': nao_encontrados,
-            'codigos_com_outra_versao': outra_versao,
             'cargos_nao_cadastrados_no_academy': sorted(cargos_desconhecidos),
             'documentos_sem_cargo_reconhecido': sem_cargo,
             'arquivos_sem_acesso_no_drive': erros_drive,

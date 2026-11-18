@@ -94,6 +94,12 @@ class DocumentoViewSet(viewsets.ModelViewSet):
             dj_models.Q(cargos__isnull=True) | dj_models.Q(cargos__nome=user.cargo)
         ).distinct()
 
+    def _vistos_versao_atual(self):
+        """ids dos documentos que o usuário leu NA VERSÃO ATUAL (nova versão = precisa ler de novo)."""
+        return DocumentoVisto.objects.filter(
+            usuario=self.request.user, versao=dj_models.F('documento__versao'),
+        ).values('documento_id')
+
     def get_queryset(self):
         qs = self._visiveis().prefetch_related('cargos').select_related('criado_por')
         if self.action != 'list':
@@ -101,7 +107,7 @@ class DocumentoViewSet(viewsets.ModelViewSet):
 
         # Filtros da tela (?leitura= &tipo= &setor= &cargo=); busca e ordenação via DRF
         p = self.request.query_params
-        vistos = DocumentoVisto.objects.filter(usuario=self.request.user).values('documento_id')
+        vistos = self._vistos_versao_atual()
         if p.get('leitura') == 'lidos':
             qs = qs.filter(id__in=vistos)
         elif p.get('leitura') == 'nao_lidos':
@@ -120,7 +126,7 @@ class DocumentoViewSet(viewsets.ModelViewSet):
         from apps.accounts.models import Cargo
 
         ids = list(self._visiveis().values_list('id', flat=True))
-        nao_lidos = len(ids) - DocumentoVisto.objects.filter(usuario=request.user, documento_id__in=ids).count()
+        nao_lidos = len(ids) - self._vistos_versao_atual().filter(documento_id__in=ids).count()
 
         mimes = Documento.objects.filter(id__in=ids).values_list('drive_mime_type', flat=True).distinct()
         tipos = sorted({tipo_arquivo(m) for m in mimes})
@@ -203,8 +209,9 @@ class DocumentoViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         user = self.request.user
         if user.is_authenticated and self.action in ('list', 'retrieve'):
-            context['vistos_ids'] = set(
-                DocumentoVisto.objects.filter(usuario=user).values_list('documento_id', flat=True)
+            # (documento_id, versão lida) de todas as leituras do usuário, numa única consulta
+            context['vistos'] = set(
+                DocumentoVisto.objects.filter(usuario=user).values_list('documento_id', 'versao')
             )
         return context
 
@@ -257,11 +264,12 @@ class DocumentoViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='marcar-visto')
     def marcar_visto(self, request, pk=None):
-        """Marca/desmarca o documento como visto pelo usuário autenticado."""
+        """Marca/desmarca o documento como visto (na versão atual) pelo usuário autenticado."""
         documento = self.get_object()
         visto, created = DocumentoVisto.objects.get_or_create(
             documento=documento,
             usuario=request.user,
+            versao=documento.versao,
         )
         if not created:
             visto.delete()

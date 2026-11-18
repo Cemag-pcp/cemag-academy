@@ -114,7 +114,8 @@ def generate_frequencia_pdf(documento) -> BytesIO:
 
     # Registros de visualização ordenados por nome
     vistos = list(
-        documento.vistos.select_related('usuario').order_by('usuario__nome')
+        documento.vistos.filter(versao=documento.versao)  # só quem leu a versão atual
+        .select_related('usuario').order_by('usuario__nome')
     )
 
     # ── Faixa laranja vertical (margem esquerda) ───────────────────────────────
@@ -170,7 +171,7 @@ def generate_frequencia_pdf(documento) -> BytesIO:
     # ── Bloco 3: CURSO/TREINAMENTO ────────────────────────────────────────────
     row_h2 = 0.75 * cm
     y_cur -= row_h2
-    titulo_txt = f'CURSO/TREINAMENTO: {documento.titulo}'
+    titulo_txt = f'CURSO/TREINAMENTO: {documento.titulo}' + (f' (versão {documento.versao})' if documento.versao else '')
     _cell(c, x0, y_cur, CONTENT_W, row_h2, titulo_txt, size=8, bold=False, border=True)
 
     # ── Bloco 4: DATA / INSTRUTOR ─────────────────────────────────────────────

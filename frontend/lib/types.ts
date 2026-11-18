@@ -59,7 +59,13 @@ export interface Documento {
   criadoPorNome: string
   criadoEm: string
   ativo: boolean
+  /** Código na Lista Mestra sem a versão (ex.: FL AL-001) e versão vigente (ex.: 002) */
+  codigo: string
+  versao: string
+  /** Lido na versão atual */
   isVisto: boolean
+  /** Leu uma versão anterior, mas não a atual: precisa ler de novo */
+  novaVersao: boolean
 }
 
 export interface Department {
