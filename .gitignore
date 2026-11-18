@@ -1,0 +1,106 @@
+# ══════════════════════════════════════════════════════════════════════
+# Cemag Academy — backend (Django) + frontend (Next.js)
+# ══════════════════════════════════════════════════════════════════════
+
+# ── Segredos / variáveis de ambiente ──────────────────────────────────
+# .env tem senha do banco (RDS), chave privada do Google e chaves da AWS
+.env
+.env.*
+*.env
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+service-account*.json
+client_secret*.json
+
+# ── Dados locais / backups (contêm dados pessoais e hashes de senha) ──
+backend/backups/
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3.bak*
+db.sqlite3*
+*.dump
+*.bak
+
+# Planilhas e exportações de trabalho (setor_cargo.csv é versionado: é a fonte dos cargos)
+*.xlsx
+*.xls
+Controle Cemag Academy*.csv
+~$*
+.~lock.*#
+
+# ── Uploads do usuário (fotos, materiais) ─────────────────────────────
+backend/media/
+media/
+
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+staticfiles/
+static_root/
+celerybeat-schedule
+celerybeat.pid
+
+# Testes / cobertura / ferramentas
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+.ipynb_checkpoints/
+
+# ── Node / Next.js ────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.vercel/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de runtime do v0
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+
+# ── Logs ──────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Editores / SO ─────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Ferramentas de IA locais ──────────────────────────────────────────
+.claude/settings.local.json

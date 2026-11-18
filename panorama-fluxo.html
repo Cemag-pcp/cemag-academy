@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEMAG Academy | Panorama e Fluxo da Plataforma</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --panel: #fffdf8;
+      --panel-alt: #f8f3ea;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d9cdb9;
+      --primary: #c75b12;
+      --primary-dark: #8c3d0a;
+      --accent: #264653;
+      --success: #2a9d8f;
+      --warning: #b7791f;
+      --shadow: 0 18px 40px rgba(38, 70, 83, 0.12);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(199, 91, 18, 0.08), transparent 28%),
+        linear-gradient(180deg, #f7f2e9 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+
+    .page {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 36px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #17313a 0%, #264653 55%, #355f6f 100%);
+      color: #fff;
+      border-radius: 32px;
+      padding: 34px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -80px;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 18px 0 14px;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 1.05;
+      max-width: 860px;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .summary-card,
+    .module-card,
+    .flow-card,
+    .legend-card {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card {
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 24px;
+      margin-top: 26px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary-dark);
+    }
+
+    .module-card,
+    .legend-card {
+      padding: 22px;
+      border: 1px solid var(--line);
+    }
+
+    .module-list,
+    .legend-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .module-item,
+    .legend-item {
+      padding: 14px 16px;
+      background: var(--panel-alt);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .module-item strong,
+    .legend-item strong {
+      display: block;
+      font-size: 0.98rem;
+      margin-bottom: 5px;
+    }
+
+    .module-item span,
+    .legend-item span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.93rem;
+    }
+
+    .flow-board {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .flow-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .flow-header h2 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    .flow-header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.6;
+    }
+
+    .flow-track {
+      display: grid;
+      grid-template-columns: repeat(9, minmax(180px, 1fr));
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .flow-step {
+      min-width: 180px;
+      position: relative;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid var(--primary);
+      border-right: 2px solid var(--primary);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .flow-card {
+      height: 100%;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fffefb 0%, #fbf7ef 100%);
+    }
+
+    .step-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .step-owner {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .flow-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .flow-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.93rem;
+    }
+
+    .branches {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .branch {
+      border: 1px dashed var(--line);
+      border-radius: 22px;
+      padding: 18px;
+      background: #fffaf2;
+    }
+
+    .branch h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .branch p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.93rem;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: #f7e5d6;
+      border: 1px solid #edc7a5;
+      color: var(--primary-dark);
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: linear-gradient(90deg, rgba(42, 157, 143, 0.12), rgba(199, 91, 18, 0.08));
+      border: 1px solid rgba(42, 157, 143, 0.2);
+      color: #25414c;
+      line-height: 1.6;
+      font-size: 0.94rem;
+    }
+
+    @media (max-width: 1100px) {
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1280px);
+        padding-top: 20px;
+      }
+
+      .hero,
+      .flow-board {
+        border-radius: 24px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .branches {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Panorama da Plataforma</span>
+      <h1>CEMAG Academy como fluxo operacional de treinamento corporativo</h1>
+      <p>
+        Este anagrama em HTML organiza a plataforma como uma cadeia continua:
+        governanca de acesso, criacao e distribuicao de cursos, consumo do conteudo,
+        acompanhamento do progresso, avaliacao, certificacao e visao analitica para RH e gestao.
+      </p>
+
+      <div class="summary">
+        <article class="summary-card">
+          <strong>3 perfis</strong>
+          <span>RH, gestor e colaborador com acessos distintos.</span>
+        </article>
+        <article class="summary-card">
+          <strong>1 trilha</strong>
+          <span>Curso, progresso, avaliacao e certificado no mesmo fluxo.</span>
+        </article>
+        <article class="summary-card">
+          <strong>4 apoios</strong>
+          <span>Biblioteca, notificacoes, auditoria e relatorios.</span>
+        </article>
+        <article class="summary-card">
+          <strong>Visao 360</strong>
+          <span>Operacao, desempenho e rastreabilidade da capacitacao.</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="stack">
+        <article class="module-card">
+          <h2 class="section-title">Modulos-Chave</h2>
+          <div class="module-list">
+            <div class="module-item">
+              <strong>Acesso e Estrutura</strong>
+              <span>Usuarios, cargos, departamentos e permissoes por modulo.</span>
+            </div>
+            <div class="module-item">
+              <strong>Gestao de Cursos</strong>
+              <span>Criacao de cursos, modulos, aulas, publicacao, prazo e publico-alvo.</span>
+            </div>
+            <div class="module-item">
+              <strong>Entrega de Conteudo</strong>
+              <span>Aulas em video, PDF, imagem, texto e materiais sincronizados do Drive.</span>
+            </div>
+            <div class="module-item">
+              <strong>Avaliacao e Certificacao</strong>
+              <span>Correcao automatica, revisao manual de questoes abertas e certificado PDF.</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="legend-card">
+          <h2 class="section-title">Camadas de Apoio</h2>
+          <div class="legend-list">
+            <div class="legend-item">
+              <strong>Biblioteca</strong>
+              <span>Repositorio complementar de arquivos e materiais por perfil ou area.</span>
+            </div>
+            <div class="legend-item">
+              <strong>Notificacoes</strong>
+              <span>Avisos de atribuicao, prazo, revisao pendente, resultado e certificado.</span>
+            </div>
+            <div class="legend-item">
+              <strong>Auditoria</strong>
+              <span>Registro de acoes, usuario, modulo, IP e horario.</span>
+            </div>
+            <div class="legend-item">
+              <strong>Dashboards e Relatorios</strong>
+              <span>KPIs de engajamento, conclusao, score, pendencias e desempenho por area.</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <article class="flow-board">
+        <div class="flow-header">
+          <div>
+            <h2>Fluxo principal da plataforma</h2>
+            <p>
+              O centro do produto e a jornada do treinamento. O fluxo abaixo mostra
+              como os perfis interagem com o sistema desde a configuracao inicial ate
+              a certificacao e a leitura executiva dos resultados.
+            </p>
+          </div>
+        </div>
+
+        <div class="flow-track">
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">1</div>
+              <span class="step-owner">RH</span>
+              <h3>Configura acessos</h3>
+              <p>Define usuarios, cargos, departamentos e permissoes granulares para operar a plataforma.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">2</div>
+              <span class="step-owner">RH / Gestor</span>
+              <h3>Cria e publica cursos</h3>
+              <p>Monta modulos, aulas, prazos, obrigatoriedade, publico-alvo, instrutor e status de publicacao.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">3</div>
+              <span class="step-owner">Sistema</span>
+              <h3>Sincroniza materiais</h3>
+              <p>Integra anexos locais e arquivos do Google Drive para ampliar a trilha de aprendizagem.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">4</div>
+              <span class="step-owner">Colaborador</span>
+              <h3>Consome o conteudo</h3>
+              <p>Acessa aulas, materiais, biblioteca e discussao do curso a partir da area pessoal.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">5</div>
+              <span class="step-owner">Sistema</span>
+              <h3>Atualiza progresso</h3>
+              <p>Controla aulas concluídas, arquivos vistos, percentual, tempo gasto e status da trilha.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">6</div>
+              <span class="step-owner">Colaborador</span>
+              <h3>Realiza avaliacao</h3>
+              <p>Envia respostas objetivas e abertas quando conclui a etapa de conteudo do curso.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">7</div>
+              <span class="step-owner">Sistema / Gestor</span>
+              <h3>Corrige e revisa</h3>
+              <p>Corrige automaticamente o que for objetivo e encaminha questoes abertas para revisao manual.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">8</div>
+              <span class="step-owner">Sistema</span>
+              <h3>Emite certificado</h3>
+              <p>Ao aprovar o aluno, fecha a trilha, registra conclusao e gera o certificado em PDF.</p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-card">
+              <div class="step-tag">9</div>
+              <span class="step-owner">RH / Gestor</span>
+              <h3>Analisa resultados</h3>
+              <p>Ler dashboards, relatorios, pendencias, cursos criticos e indicadores de desempenho da capacitacao.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="branches">
+          <section class="branch">
+            <h3>Trilha de decisao da avaliacao</h3>
+            <p>
+              Se a avaliacao tiver apenas questoes objetivas, o sistema calcula a nota e decide
+              aprovacao ou reprova automaticamente. Se houver questoes abertas, o status passa para
+              pendente ate a revisao de gestor ou RH.
+            </p>
+            <div class="pill-row">
+              <span class="pill">Objetiva -> correcao automatica</span>
+              <span class="pill">Aberta -> revisao manual</span>
+              <span class="pill">Aprovado -> certificado</span>
+              <span class="pill">Reprovado -> nova tentativa</span>
+            </div>
+          </section>
+
+          <section class="branch">
+            <h3>Fluxos transversais de governanca</h3>
+            <p>
+              Durante toda a jornada, a plataforma dispara notificacoes, registra auditoria,
+              libera acesso por perfil e consolida dados para relatorios executivos. Isso transforma
+              o LMS em um sistema de controle operacional, nao apenas de exibicao de cursos.
+            </p>
+            <div class="pill-row">
+              <span class="pill">Notificacoes de prazo</span>
+              <span class="pill">Auditoria de acoes</span>
+              <span class="pill">Controle por perfil</span>
+              <span class="pill">KPIs e relatorios</span>
+            </div>
+          </section>
+        </div>
+
+        <div class="footer-note">
+          Leitura executiva: a plataforma conecta gestao de treinamento, avaliacao e evidencias de
+          conclusao em um mesmo ciclo. RH governa, gestores acompanham e revisam, colaboradores executam
+          a trilha, e o sistema fecha o processo com certificacao e inteligencia analitica.
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
