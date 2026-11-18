@@ -312,14 +312,15 @@ export function BibliotecaList() {
 
       {/* ── Create / Edit Modal ─────────────────────────────────────────── */}
       <Dialog open={modalOpen} onOpenChange={open => { if (!open && !saving) setModalOpen(false) }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        {/* Altura limitada à tela: título e botões fixos, só o formulário rola */}
+        <DialogContent className="max-w-lg flex flex-col overflow-hidden p-0 gap-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <DialogTitle>{editTarget ? 'Editar Material' : 'Adicionar Material'}</DialogTitle>
             <DialogDescription>
               {editTarget ? 'Altere os dados do material da biblioteca.' : 'Envie um novo material para a biblioteca digital.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 px-6 py-4">
             <div>
               <Label>Título <span className="text-destructive">*</span></Label>
               <Input className="mt-1" value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} placeholder="Ex: Manual de Operação S800" />
@@ -341,7 +342,7 @@ export function BibliotecaList() {
             </div>
             <div>
               <Label className="mb-2 block">Visível para</Label>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
                 {ROLES_OPTIONS.map(opt => (
                   <label key={opt.value} className="flex items-center gap-2 cursor-pointer text-sm">
                     <Checkbox
@@ -436,7 +437,7 @@ export function BibliotecaList() {
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t">
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? 'Salvando...' : editTarget ? 'Salvar Alterações' : 'Adicionar'}
