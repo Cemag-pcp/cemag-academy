@@ -52,6 +52,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # serve /static/ (admin, Swagger) sem nginx
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -145,9 +146,14 @@ AWS_DEFAULT_ACL = None  # Bucket does not allow ACLs - use bucket policy instead
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
 
-# Use S3 for media files if configured
+# Uploads (fotos, materiais) vão para o S3 quando configurado; os estáticos ficam com o
+# whitenoise em produção (prod.py troca o backend de 'staticfiles').
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
 if AWS_ACCESS_KEY_ID and AWS_STORAGE_BUCKET_NAME:
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage'}
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
 
 # ── Django REST Framework ──────────────────────────────────────────────────────
@@ -206,3 +212,6 @@ ISO_LISTA_MESTRA_ID  = config('ISO_LISTA_MESTRA_ID', default='17uKTzoeq7krGaDl61
 ISO_LISTA_MESTRA_ABA = config('ISO_LISTA_MESTRA_ABA', default='LM GQ-001-001 (INTERNOS)')
 ISO_MATRIZ_ID        = config('ISO_MATRIZ_ID', default='15ksFskWimXuqgqfOxELIOOUI7dE5pjHRR6FFuNalaWg')
 ISO_SYNC_INTERVALO_MIN = config('ISO_SYNC_INTERVALO_MIN', default=15, cast=int)
+# Disparo automático ao abrir a tela (thread no servidor web). Em produção fica
+# desligado: quem sincroniza é o Cron Job do Render (manage.py sincronizar_iso).
+ISO_SYNC_AUTOMATICA  = config('ISO_SYNC_AUTOMATICA', default=True, cast=bool)

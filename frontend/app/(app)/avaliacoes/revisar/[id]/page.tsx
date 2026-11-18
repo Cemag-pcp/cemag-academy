@@ -1,12 +1,11 @@
-'use client'
+import RevisarAvaliacaoPagina from './pagina'
 
-import { useParams } from 'next/navigation'
-import { AvaliacoesRevisao } from '@/components/avaliacoes/avaliacoes-revisao'
+// Site estático: gera só a página "molde" /avaliacoes/revisar/_/; o Render reescreve
+// /avaliacoes/revisar/<id> para ela e o ID é lido da URL no navegador (useIdDaRota).
+export function generateStaticParams() {
+  return [{ id: '_' }]
+}
 
-// Destino do link das notificações "Avaliação para revisar"
 export default function RevisarAvaliacaoPage() {
-  const params = useParams()
-  const id = Array.isArray(params.id) ? params.id[0] : (params.id as string)
-
-  return <AvaliacoesRevisao abrirId={id} />
+  return <RevisarAvaliacaoPagina />
 }

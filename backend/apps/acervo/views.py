@@ -181,7 +181,8 @@ class DocumentoViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         # Ao abrir a tela, dispara a sincronização em segundo plano se estiver vencida
-        if request.query_params.get('page', '1') == '1':
+        from django.conf import settings
+        if settings.ISO_SYNC_AUTOMATICA and request.query_params.get('page', '1') == '1':
             from .sync_iso import sincronizar_se_preciso
             try:
                 sincronizar_se_preciso()

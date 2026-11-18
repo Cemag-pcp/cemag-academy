@@ -1,0 +1,143 @@
+# ══════════════════════════════════════════════════════════════════════
+# Cemag Academy — Blueprint do Render
+#   Dashboard › New › Blueprint › escolher este repositório.
+#   Os valores com "sync: false" são pedidos na criação (segredos do .env).
+#   Região Virginia: mesma região do RDS (us-east-1) → consultas de ~1 ms.
+# ══════════════════════════════════════════════════════════════════════
+
+services:
+  # ── API (Django + DRF) ──────────────────────────────────────────────
+  - type: web
+    name: cemag-academy-api
+    runtime: python
+    region: virginia
+    plan: starter
+    rootDir: backend
+    buildCommand: pip install -r requirements.prod.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate --noinput
+    startCommand: gunicorn cemag_academy.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+    healthCheckPath: /api/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.14
+      - key: DJANGO_SETTINGS_MODULE
+        value: cemag_academy.settings.prod
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      # Domínio próprio, se houver (o *.onrender.com já entra sozinho)
+      - key: ALLOWED_HOSTS
+        sync: false
+      # URL do frontend, ex.: https://cemag-academy-web.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+      # Banco (RDS compartilhado, schema próprio)
+      - key: DB_ENGINE
+        value: django.db.backends.postgresql
+      - key: DB_SCHEMA
+        value: cemag_academy
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      # Conta de serviço do Google (Drive / Sheets)
+      - key: GOOGLE_TYPE
+        value: service_account
+      - key: GOOGLE_PROJECT_ID
+        sync: false
+      - key: GOOGLE_PRIVATE_KEY_ID
+        sync: false
+      - key: GOOGLE_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_EMAIL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_AUTH_URI
+        value: https://accounts.google.com/o/oauth2/auth
+      - key: GOOGLE_TOKEN_URI
+        value: https://oauth2.googleapis.com/token
+      - key: GOOGLE_UNIVERSE_DOMAIN
+        value: googleapis.com
+
+      # Uploads no S3 (o disco do Render é apagado a cada deploy)
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_STORAGE_BUCKET_NAME
+        sync: false
+
+      # Documentação ISO: quem sincroniza é o cron abaixo, não a tela
+      - key: ISO_SYNC_AUTOMATICA
+        value: "False"
+
+  # ── Frontend (Next.js exportado como site estático: grátis, CDN, não dorme) ──
+  - type: web
+    name: cemag-academy-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && NEXT_EXPORT=1 npm run build
+    staticPublishPath: ./out
+    # Rotas com ID: só existe a página "molde" (id "_"); o ID é lido da URL no navegador.
+    # Arquivos que existem (ex.: /cursos/index.html) são servidos antes das regras.
+    routes:
+      - type: rewrite
+        source: /cursos/*
+        destination: /cursos/_/index.html
+      - type: rewrite
+        source: /avaliacoes/revisar/*
+        destination: /avaliacoes/revisar/_/index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Lido no BUILD: mudou a URL da API → fazer novo deploy do frontend.
+      # Ex.: https://cemag-academy-api.onrender.com/api/v1
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
+  # ── Sincronização da Documentação ISO (Lista Mestra + Matriz) ───────
+  - type: cron
+    name: cemag-academy-sync-iso
+    runtime: python
+    region: virginia
+    plan: starter
+    rootDir: backend
+    schedule: "*/10 * * * *"   # a cada 10 min (horário UTC)
+    buildCommand: pip install -r requirements.prod.txt
+    startCommand: python manage.py sincronizar_iso
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.14
+      - key: DJANGO_SETTINGS_MODULE
+        value: cemag_academy.settings.prod
+      # Mesmas credenciais da API (digitadas uma vez só, lá)
+      - { key: SECRET_KEY,             fromService: { type: web, name: cemag-academy-api, envVarKey: SECRET_KEY } }
+      - { key: DB_ENGINE,              fromService: { type: web, name: cemag-academy-api, envVarKey: DB_ENGINE } }
+      - { key: DB_SCHEMA,              fromService: { type: web, name: cemag-academy-api, envVarKey: DB_SCHEMA } }
+      - { key: DB_HOST,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_HOST } }
+      - { key: DB_PORT,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_PORT } }
+      - { key: DB_NAME,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_NAME } }
+      - { key: DB_USER,                fromService: { type: web, name: cemag-academy-api, envVarKey: DB_USER } }
+      - { key: DB_PASSWORD,            fromService: { type: web, name: cemag-academy-api, envVarKey: DB_PASSWORD } }
+      - { key: GOOGLE_TYPE,            fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_TYPE } }
+      - { key: GOOGLE_PROJECT_ID,      fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_PROJECT_ID } }
+      - { key: GOOGLE_PRIVATE_KEY_ID,  fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_PRIVATE_KEY_ID } }
+      - { key: GOOGLE_PRIVATE_KEY,     fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_PRIVATE_KEY } }
+      - { key: GOOGLE_CLIENT_EMAIL,    fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_CLIENT_EMAIL } }
+      - { key: GOOGLE_CLIENT_ID,       fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_CLIENT_ID } }
+      - { key: GOOGLE_AUTH_URI,        fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_AUTH_URI } }
+      - { key: GOOGLE_TOKEN_URI,       fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_TOKEN_URI } }
+      - { key: GOOGLE_UNIVERSE_DOMAIN, fromService: { type: web, name: cemag-academy-api, envVarKey: GOOGLE_UNIVERSE_DOMAIN } }
+      - { key: AWS_ACCESS_KEY_ID,      fromService: { type: web, name: cemag-academy-api, envVarKey: AWS_ACCESS_KEY_ID } }
+      - { key: AWS_SECRET_ACCESS_KEY,  fromService: { type: web, name: cemag-academy-api, envVarKey: AWS_SECRET_ACCESS_KEY } }
+      - { key: AWS_STORAGE_BUCKET_NAME, fromService: { type: web, name: cemag-academy-api, envVarKey: AWS_STORAGE_BUCKET_NAME } }

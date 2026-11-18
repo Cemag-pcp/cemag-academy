@@ -1,5 +1,11 @@
-import { redirect } from 'next/navigation'
+'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+// Redireciona no navegador (o site estático não tem servidor para redirecionar)
 export default function CadastrosPage() {
-  redirect('/cadastros/cargos')
+  const router = useRouter()
+  useEffect(() => { router.replace('/cadastros/cargos') }, [router])
+  return null
 }

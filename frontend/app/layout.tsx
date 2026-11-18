@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
@@ -28,7 +27,6 @@ export default function RootLayout({
           {children}
           <Toaster richColors position="top-right" />
         </AuthProvider>
-        <Analytics />
       </body>
     </html>
   )

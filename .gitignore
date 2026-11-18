@@ -104,3 +104,6 @@ desktop.ini
 
 # ── Ferramentas de IA locais ──────────────────────────────────────────
 .claude/settings.local.json
+
+# Testes de navegador (Playwright MCP)
+.playwright-mcp/
